@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Viajes - JSLH Transport</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a1a;
+            padding: 20px;
+        }
+        header {
+            background: #1e3a5f;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { font-size: 22px; }
+        header .totales { font-size: 14px; text-align: right; }
+        header .totales .monto { font-size: 20px; font-weight: bold; }
+
+        .resumen {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .tarjeta-resumen {
+            background: white;
+            padding: 18px;
+            border-radius: 8px;
+            border-left: 5px solid #ccc;
+        }
+        .tarjeta-resumen .num {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .tarjeta-resumen .label {
+            font-size: 13px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tarjeta-resumen.en-curso { border-left-color: #3498db; }
+        .tarjeta-resumen.pendiente { border-left-color: #f39c12; }
+        .tarjeta-resumen.subido { border-left-color: #9b59b6; }
+        .tarjeta-resumen.cobrado { border-left-color: #27ae60; }
+
+        .seccion {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .seccion h2 {
+            font-size: 16px;
+            color: #1e3a5f;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f2f5;
+        }
+
+        .rc-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .rc-item:last-child { border-bottom: none; }
+
+        .rc-info { flex: 1; }
+        .rc-ref {
+            font-weight: bold;
+            color: #1e3a5f;
+            font-size: 15px;
+        }
+        .rc-ruta {
+            font-size: 13px;
+            color: #555;
+            margin-top: 3px;
+        }
+        .rc-broker {
+            font-size: 12px;
+            color: #888;
+            margin-top: 3px;
+        }
+        .rc-monto {
+            font-size: 18px;
+            font-weight: bold;
+            color: #27ae60;
+            min-width: 100px;
+            text-align: right;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-left: 8px;
+        }
+        .badge.EN_CURSO { background: #d6eaf8; color: #1b4f72; }
+        .badge.ENTREGADO { background: #fdebd0; color: #7e5109; }
+        .badge.SUBIDO_A_FARO { background: #e8daef; color: #4a235a; }
+        .badge.COBRADO { background: #d5f5e3; color: #145a32; }
+
+        .vacio {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+            font-style: italic;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🚛 JSLH Transport · Panel de Viajes</h1>
+        <div class="totales">
+            <div>Cobrado (histórico)</div>
+            <div class="monto" th:text="'$' + ${totalCobrado} + ' USD'">$0 USD</div>
+        </div>
+    </header>
+
+    <!-- RESUMEN RÁPIDO -->
+    <div class="resumen">
+        <div class="tarjeta-resumen en-curso">
+            <div class="num" th:text="${cantEnCurso}">0</div>
+            <div class="label">En curso</div>
+        </div>
+        <div class="tarjeta-resumen pendiente">
+            <div class="num" th:text="${cantPendientes}">0</div>
+            <div class="label">Entregados sin subir a Faro</div>
+        </div>
+        <div class="tarjeta-resumen subido">
+            <div class="num" th:text="${cantSubidos}">0</div>
+            <div class="label">Subidos, esperando pago</div>
+        </div>
+        <div class="tarjeta-resumen cobrado">
+            <div class="num" th:text="${cantCobrados}">0</div>
+            <div class="label">Cobrados</div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: EN CURSO -->
+    <div class="seccion">
+        <h2>🟦 En curso</h2>
+        <div th:if="${enCurso.isEmpty()}" class="vacio">No hay viajes en curso</div>
+        <div class="rc-item" th:each="rc : ${enCurso}">
+            <div class="rc-info">
+                <div class="rc-ref">
+                    <span th:text="${rc.referenciaExterna}">REF</span>
+                    <span class="badge EN_CURSO">En curso</span>
+                </div>
+                <div class="rc-ruta">
+                    <span th:text="${rc.origen}">Origen</span>
+                    →
+                    <span th:text="${rc.destino}">Destino</span>
+                    · <span th:text="${rc.millas}">0</span> millas
+                </div>
+                <div class="rc-broker" th:text="${rc.broker.nombre}">Broker</div>
+            </div>
+            <div class="rc-monto" th:text="'$' + ${rc.rateUsd}">$0</div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: ENTREGADOS SIN SUBIR A FARO -->
+    <div class="seccion">
+        <h2>🟨 Entregados · Pendientes de subir a Faro</h2>
+        <div th:if="${pendientesDeSubir.isEmpty()}" class="vacio">Todo está subido a Faro ✅</div>
+        <div class="rc-item" th:each="rc : ${pendientesDeSubir}">
+            <div class="rc-info">
+                <div class="rc-ref">
+                    <span th:text="${rc.referenciaExterna}">REF</span>
+                    <span class="badge ENTREGADO">Entregado</span>
+                </div>
+                <div class="rc-ruta">
+                    <span th:text="${rc.origen}">Origen</span>
+                    →
+                    <span th:text="${rc.destino}">Destino</span>
+                    · <span th:text="${rc.millas}">0</span> millas
+                </div>
+                <div class="rc-broker" th:text="${rc.broker.nombre}">Broker</div>
+            </div>
+            <div class="rc-monto" th:text="'$' + ${rc.rateUsd}">$0</div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: SUBIDOS A FARO, ESPERANDO PAGO -->
+    <div class="seccion">
+        <h2>🟪 Subidos a Faro · Esperando pago</h2>
+        <div th:if="${subidosAFaro.isEmpty()}" class="vacio">No hay facturas esperando pago</div>
+        <div class="rc-item" th:each="rc : ${subidosAFaro}">
+            <div class="rc-info">
+                <div class="rc-ref">
+                    <span th:text="${rc.referenciaExterna}">REF</span>
+                    <span class="badge SUBIDO_A_FARO">Subido a Faro</span>
+                </div>
+                <div class="rc-ruta">
+                    <span th:text="${rc.origen}">Origen</span>
+                    →
+                    <span th:text="${rc.destino}">Destino</span>
+                    · <span th:text="${rc.millas}">0</span> millas
+                </div>
+                <div class="rc-broker" th:text="${rc.broker.nombre}">Broker</div>
+            </div>
+            <div class="rc-monto" th:text="'$' + ${rc.rateUsd}">$0</div>
+        </div>
+        <div style="text-align:right; margin-top:15px; font-weight:bold; color:#4a235a;">
+            Total por cobrar: <span th:text="'$' + ${totalPorCobrar} + ' USD'">$0</span>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: COBRADOS -->
+    <div class="seccion">
+        <h2>🟩 Cobrados</h2>
+        <div th:if="${cobrados.isEmpty()}" class="vacio">Aún no hay viajes cobrados</div>
+        <div class="rc-item" th:each="rc : ${cobrados}">
+            <div class="rc-info">
+                <div class="rc-ref">
+                    <span th:text="${rc.referenciaExterna}">REF</span>
+                    <span class="badge COBRADO">Cobrado</span>
+                </div>
+                <div class="rc-ruta">
+                    <span th:text="${rc.origen}">Origen</span>
+                    →
+                    <span th:text="${rc.destino}">Destino</span>
+                    · <span th:text="${rc.millas}">0</span> millas
+                </div>
+                <div class="rc-broker" th:text="${rc.broker.nombre}">Broker</div>
+            </div>
+            <div class="rc-monto" th:text="'$' + ${rc.rateUsd}">$0</div>
+        </div>
+    </div>
+
+</body>
+</html>
