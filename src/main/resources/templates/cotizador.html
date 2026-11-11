@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cotizador Rápido</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        .card { background: white; max-width: 650px; margin: 0 auto; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input[type="text"] { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { background: #1e3a5f; color: white; padding: 12px; width: 100%; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .resultado { background: #e6fffa; border-left: 5px solid #27ae60; padding: 15px; margin-top: 20px; border-radius: 4px; }
+        .error { background: #fde8e8; color: red; padding: 15px; margin-top: 20px; border-radius: 4px; }
+        .fila { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+    <!-- ===== Tarjeta principal ===== -->
+    <div class="card">
+        <a href="/" style="display: inline-block; margin-bottom: 15px; color: #1e3a5f; text-decoration: none; font-weight: bold;">
+            ⬅ Volver al Panel
+        </a>
+        <h2>🚛 Cotizador de Viajes</h2>
+
+        <form action="/cotizar" method="post">
+            <label>Origen:</label>
+            <input type="text" name="origen" th:value="${origen}" placeholder="Ej. Laredo, TX" required>
+
+            <label>Destino:</label>
+            <input type="text" name="destino" th:value="${destino}" placeholder="Ej. Chicago, IL" required>
+
+            <button type="submit">Calcular Costo</button>
+        </form>
+
+        <!-- Bloque de resultados -->
+        <div th:if="${resultado != null}">
+
+            <div th:if="${resultado['error']}" class="error" th:text="${resultado['error']}"></div>
+
+            <div th:if="${resultado['millasTotales']}" class="resultado">
+                <h3>📊 Resumen del Viaje</h3>
+                <div class="fila"><span>Millas Totales:</span> <strong th:text="${#numbers.formatDecimal(resultado['millasTotales'], 1, 2)} + ' mi'"></strong></div>
+                <div class="fila"><span>Galones Totales Requeridos:</span> <strong th:text="${#numbers.formatDecimal(resultado['totalGalones'], 1, 2)} + ' gal'"></strong></div>
+                <div class="fila"><span>Precio Promedio por Galón:</span> <span th:text="'$' + ${#numbers.formatDecimal(resultado['precioPromedioGalon'], 1, 2)}"></span></div>
+
+                <h3 th:text="'Total Costo Estimado: $' + ${#numbers.formatDecimal(resultado['costoTotal'], 1, 2)}" style="color: #27ae60; margin-top: 15px;"></h3>
+
+                <h4 style="margin-top: 20px;">⛽ Desglose de Diésel por Estado</h4>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px;">
+                    <thead>
+                        <tr style="background: #e2e8f0; text-align: left;">
+                            <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Estado</th>
+                            <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Millas</th>
+                            <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Galones</th>
+                            <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Precio/Gal</th>
+                            <th style="padding: 8px; border-bottom: 2px solid #cbd5e1;">Costo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="estado : ${resultado['desgloseEstados']}" style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 8px;" th:text="${estado['nombre']}"></td>
+                            <td style="padding: 8px;" th:text="${#numbers.formatDecimal(estado['millas'], 1, 2)}"></td>
+                            <td style="padding: 8px;" th:text="${#numbers.formatDecimal(estado['galones'], 1, 2)}"></td>
+                            <td style="padding: 8px;" th:text="'$' + ${#numbers.formatDecimal(estado['precioGalon'], 1, 2)}"></td>
+                            <td style="padding: 8px;" th:text="'$' + ${#numbers.formatDecimal(estado['costoDiesel'], 1, 2)}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 style="margin-top: 20px;">💵 Otros Costos</h4>
+                <div class="fila"><span>Costo de Operador (0.45/mi):</span> <span th:text="'$' + ${#numbers.formatDecimal(resultado['costoOperador'], 1, 2)}"></span></div>
+                <div class="fila"><span>Peajes estimados:</span> <span th:text="'$' + ${#numbers.formatDecimal(resultado['costoPeajes'], 1, 2)}"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Tarjeta del mapa ===== -->
+    <div class="card" style="margin-top: 20px; padding: 15px;">
+        <h3 style="margin-top: 0; color: #1e3a5f;">🗺️ Ruta Visual</h3>
+        <div id="mapContainer"
+             th:attr="data-polyline=${resultado != null && resultado['polyline'] != null ? resultado['polyline'] : 'null'}"
+             style="width: 100%; height: 450px; border-radius: 8px; border: 1px solid #ddd;">
+        </div>
+    </div>
+
+    <!-- ===== SDK de HERE Maps v3.1 (el orden importa) ===== -->
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core-legacy.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service-legacy.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+    <link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const mapContainer = document.getElementById('mapContainer');
+            const polylineStr = mapContainer.getAttribute('data-polyline');
+
+            if (!polylineStr || polylineStr === 'null') {
+                mapContainer.innerHTML = "<p style='padding:20px;text-align:center;color:#666;'>No se pudo generar la ruta visual (Polyline vacía).</p>";
+                return;
+            }
+
+            try {
+                // 👇 Pon aquí tu key NUEVA, restringida por dominio
+                const platform = new H.service.Platform({ apikey: '6weKeYJt6gg1cIaRm8y-AuJFMrLuV9Rq1Inqqq1Iu7Y' });
+
+                function hasWebGL() {
+                    try {
+                        const c = document.createElement('canvas');
+                        return !!(c.getContext('webgl') || c.getContext('experimental-webgl'));
+                    } catch (e) { return false; }
+                }
+
+                let baseLayer, engineType;
+                if (hasWebGL()) {
+                    // Camino normal: vector + WebGL
+                    baseLayer = platform.createDefaultLayers().vector.normal.map;
+                    engineType = H.map.render.RenderEngine.EngineType.WEBGL;
+                } else {
+                    // Fallback sin WebGL: Raster Tile API v3 + motor P2D
+                    const rasterService = platform.getRasterTileService({
+                        queryParams: { style: 'explore.day', size: 512 }
+                    });
+                    baseLayer = new H.map.layer.TileLayer(
+                        new H.service.rasterTile.Provider(rasterService)
+                    );
+                    engineType = H.map.render.RenderEngine.EngineType.P2D;
+                }
+
+                const map = new H.Map(mapContainer, baseLayer, {
+                    zoom: 5,
+                    center: { lat: 37.0, lng: -95.0 },
+                    engineType: engineType,
+                    pixelRatio: window.devicePixelRatio || 1
+                });
+                window.addEventListener('resize', () => map.getViewPort().resize());
+
+                new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+                try {
+                    H.ui.UI.createDefault(map, platform.createDefaultLayers());
+                } catch (e) {
+                    console.warn('UI de HERE no disponible en modo raster:', e);
+                }
+
+                // Una polyline por sección, separadas por "|"
+                const group = new H.map.Group();
+                polylineStr.split('|').forEach(function (p) {
+                    if (!p) return;
+                    const ls = H.geo.LineString.fromFlexiblePolyline(p);
+                    group.addObject(new H.map.Polyline(ls, {
+                        style: { strokeColor: '#27ae60', lineWidth: 6 }
+                    }));
+                });
+                map.addObject(group);
+                map.getViewModel().setLookAtData({ bounds: group.getBoundingBox() });
+
+            } catch (error) {
+                console.error('Error dibujando el mapa de HERE:', error);
+                mapContainer.innerHTML = "<p style='padding:20px;text-align:center;color:red;'>Error al cargar el mapa. Revisa la consola (F12).</p>";
+            }
+        });
+    </script>
+</body>
+</html>

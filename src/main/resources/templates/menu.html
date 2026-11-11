@@ -27,7 +27,7 @@
 
         .resumen {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 15px;
             margin-bottom: 25px;
         }
@@ -48,6 +48,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+        .tarjeta-resumen.asignado { border-left-color: #1abc9c; }
         .tarjeta-resumen.en-curso { border-left-color: #3498db; }
         .tarjeta-resumen.pendiente { border-left-color: #f39c12; }
         .tarjeta-resumen.subido { border-left-color: #9b59b6; }
@@ -111,6 +112,7 @@
             letter-spacing: 0.3px;
             margin-left: 8px;
         }
+        .badge.ASIGNADO { background: #d1f2eb; color: #0e6251; }
         .badge.EN_CURSO { background: #d6eaf8; color: #1b4f72; }
         .badge.ENTREGADO { background: #fdebd0; color: #7e5109; }
         .badge.SUBIDO_A_FARO { background: #e8daef; color: #4a235a; }
@@ -123,20 +125,50 @@
             font-style: italic;
             font-size: 13px;
         }
+        .rc-acciones { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.form-pod { display: flex; gap: 6px; align-items: center; }
+.form-pod input[type=file] { font-size: 12px; }
+.btn { display: inline-block; padding: 5px 12px; border-radius: 5px; border: none; font-size: 12px;
+       font-weight: bold; text-decoration: none; cursor: pointer; color: white; }
+.btn-verde { background: #27ae60; }
+.btn-azul { background: #3498db; }
+.btn-gris { background: #7f8c8d; }
+.aviso { padding: 12px 16px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
+.aviso.ok { background: #d5f5e3; color: #145a32; }
+.aviso.error { background: #fadbd8; color: #78281f; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>🚛 JSLH Transport · Panel de Viajes</h1>
-        <div class="totales">
-            <div>Cobrado (histórico)</div>
-            <div class="monto" th:text="'$' + ${totalCobrado} + ' USD'">$0 USD</div>
+
+        <div style="display: flex; align-items: center; gap: 30px;">
+            <div class="totales">
+                <div>Cobrado (histórico)</div>
+                <div class="monto" th:text="'$' + ${totalCobrado} + ' USD'">$0 USD</div>
+            </div>
+            <a href="/cotizar" style="background: #27ae60; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                🧮 Cotizar Viaje
+            </a>
+            <form th:action="@{/logout}" method="post" style="display: inline; margin: 0;">
+                <button type="submit" style="background: #c0392b; color: white; padding: 12px 20px; border: none; border-radius: 5px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                    🚪 Salir
+                </button>
+            </form>
         </div>
     </header>
-
-    <!-- RESUMEN RÁPIDO -->
+    <div th:if="${mensaje}" class="aviso ok" th:text="${mensaje}"></div>
+<div th:if="${error}" class="aviso error" th:text="${error}"></div>
+<div th:if="${podsPendientes > 0}" class="aviso error">
+    ⚠️ Hay <b th:text="${podsPendientes}">0</b> POD(s) recibidos por correo que no se pudieron relacionar con un viaje (carpeta uploads/_pods_sin_asignar).
+</div>   
+<!-- RESUMEN RÁPIDO -->
     <div class="resumen">
+        <div class="tarjeta-resumen asignado">
+            <div class="num" th:text="${cantAsignados}">0</div>
+            <div class="label">Asignados</div>
+        </div>
         <div class="tarjeta-resumen en-curso">
             <div class="num" th:text="${cantEnCurso}">0</div>
             <div class="label">En curso</div>
@@ -155,9 +187,32 @@
         </div>
     </div>
 
+    <!-- SECCIÓN: ASIGNADOS -->
+    <div class="seccion">
+        <h2>🟦 Asignados · Por salir</h2>
+        <div th:if="${asignados.isEmpty()}" class="vacio">No hay viajes asignados</div>
+        <div class="rc-item" th:each="rc : ${asignados}">
+            <div class="rc-info">
+                <div class="rc-ref">
+                    <span th:text="${rc.referenciaExterna}">REF</span>
+                    <span class="badge ASIGNADO">Asignado</span>
+                </div>
+                <div class="rc-ruta">
+                    <span th:text="${rc.origen}">Origen</span>
+                    →
+                    <span th:text="${rc.destino}">Destino</span>
+                    · <span th:text="${rc.millas}">0</span> millas
+                </div>
+                <div class="rc-broker" th:text="${rc.broker.nombre}">Broker</div>
+            </div>
+            <div class="rc-monto" th:text="'$' + ${rc.rateUsd}">$0</div>
+            <div th:replace="~{fragmentos :: acciones(${rc})}"></div>
+        </div>
+    </div>
+
     <!-- SECCIÓN: EN CURSO -->
     <div class="seccion">
-        <h2>🟦 En curso</h2>
+        <h2>🚚 En curso</h2>
         <div th:if="${enCurso.isEmpty()}" class="vacio">No hay viajes en curso</div>
         <div class="rc-item" th:each="rc : ${enCurso}">
             <div class="rc-info">

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="acciones(rc)" class="rc-acciones" th:if="${rc != null}"></div>
+    <a th:if="${rc.archivoRC != null}"
+       th:href="@{/rc/{id}/archivo/rc(id=${rc.id})}" class="btn btn-gris">📄 Descargar RC</a>
+
+    <a th:if="${rc.evidenciaPOD != null}"
+       th:href="@{/rc/{id}/archivo/pod(id=${rc.id})}" class="btn btn-verde">⬇️ Descargar POD</a>
+
+    <form th:if="${rc.evidenciaPOD == null}"
+          th:action="@{/rc/{id}/pod(id=${rc.id})}"
+          method="post" enctype="multipart/form-data" class="form-pod">
+        <input type="file" name="archivo" accept=".pdf,.jpg,.jpeg,.png" required>
+        <button type="submit" class="btn btn-azul">Subir POD</button>
+    </form>
+</div>
+
+</body>
+</html>

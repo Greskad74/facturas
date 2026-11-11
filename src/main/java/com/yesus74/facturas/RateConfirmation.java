@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+
 public class RateConfirmation {
 
     @Id
@@ -21,11 +22,12 @@ public class RateConfirmation {
     @ManyToOne
     @JoinColumn(name = "broker_id")
     private Broker broker;
+    
 
     private String origen;
     private String destino;
     private Integer millas;
-
+    private String referenciasAlternas;
     // Dinero: SIEMPRE usar BigDecimal, no Double (para no perder centavos)
     @Column(precision = 12, scale = 2)
     private BigDecimal rateUsd;
@@ -63,7 +65,8 @@ public class RateConfirmation {
 
     public String getReferenciaExterna() { return referenciaExterna; }
     public void setReferenciaExterna(String referenciaExterna) { this.referenciaExterna = referenciaExterna; }
-
+public String getReferenciasAlternas() { return referenciasAlternas; }
+    public void setReferenciasAlternas(String referenciasAlternas) { this.referenciasAlternas = referenciasAlternas; }
     public Broker getBroker() { return broker; }
     public void setBroker(Broker broker) { this.broker = broker; }
 
@@ -88,6 +91,9 @@ public class RateConfirmation {
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
 
+
+   
+
     public String getArchivoRC() { return archivoRC; }
     public void setArchivoRC(String archivoRC) { this.archivoRC = archivoRC; }
 
@@ -96,4 +102,20 @@ public class RateConfirmation {
 
     public List<Stop> getStops() { return stops; }
     public void setStops(List<Stop> stops) { this.stops = stops; }
+    
+        // Datos del pago de Faro
+    @Column(precision = 12, scale = 2)
+    private BigDecimal montoPagadoUsd;
+    private LocalDate fechaPago;
+    private String referenciaPagoFaro;
+
+    public BigDecimal getMontoPagadoUsd() { return montoPagadoUsd; }
+    public void setMontoPagadoUsd(BigDecimal montoPagadoUsd) { this.montoPagadoUsd = montoPagadoUsd; }
+
+    public LocalDate getFechaPago() { return fechaPago; }
+    public void setFechaPago(LocalDate fechaPago) { this.fechaPago = fechaPago; }
+
+    public String getReferenciaPagoFaro() { return referenciaPagoFaro; }
+    public void setReferenciaPagoFaro(String referenciaPagoFaro) { this.referenciaPagoFaro = referenciaPagoFaro; }
+    
 }

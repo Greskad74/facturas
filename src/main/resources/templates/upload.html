@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Subir Rate Confirmation</title>
+    <style>
+        body { font-family: sans-serif; padding: 30px; background: #f0f2f5; }
+        .card { background: white; padding: 25px; border-radius: 8px; max-width: 600px; margin: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn { background: #1e3a5f; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn:hover { background: #2c5282; }
+        .error { color: red; background: #fde8e8; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+        .exito { color: green; background: #e6fffa; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+        pre { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+        .info-box { background: #e2e8f0; padding: 15px; border-radius: 5px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2> Subir Rate Confirmation (PDF)</h2>
+        
+        <div th:if="${error}" class="error" th:text="${error}"></div>
+        <div th:if="${exito}" class="exito" th:text="${exito}"></div>
+
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="archivo" accept=".pdf" required style="margin-bottom: 20px;">
+            <button type="submit" class="btn">Procesar</button>
+        </form>
+
+        <!-- Resultados de la IA -->
+        <div th:if="${rc != null}" class="info-box">
+            <h3>✅ Datos Extraídos:</h3>
+            <p><strong>Referencia:</strong> <span th:text="${rc.referenciaExterna}"></span></p>
+            <p><strong>Broker:</strong> <span th:text="${rc.broker.nombre}"></span></p>
+            <p><strong>Rate:</strong> $<span th:text="${rc.rateUsd}"></span></p>
+            <p><strong>Ruta:</strong> <span th:text="${rc.origen}"></span> → <span th:text="${rc.destino}"></span></p>
+            
+            <h4>JSON original de la IA:</h4>
+            <pre th:text="${json}"></pre>
+        </div>
+    </div>
+</body>
+</html>
